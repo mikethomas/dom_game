@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Get style info</title>
+<style>
+body {
+	margin: 0;
+	padding: 0;
+}
+.box {
+	width: 400px;
+	height: 300px;
+	border: 10px solid black;
+}
+</style>
+</head>
+
+<body>
+<div class="box"></div>
+<script>
+var box = document.querySelector('.box');
+//var borderWidth = window.getComputedStyle(box, null).getPropertyValue('border-width');
+function getStyle(el, prop) {
+	return window.getComputedStyle(el, null).getPropertyValue(prop);
+}
+var borderWidth = getStyle(box, 'border-width');
+console.log(borderWidth);
+</script>
+</body>
+</html>

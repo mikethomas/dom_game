@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>DOM Game - Part 4</title>
+<style>
+body {
+	margin:0;
+	padding:0;
+	background:#888;
+}
+.playArea {
+	width:800px;
+	height:500px;
+	background:#000;
+	border:10px solid #333;
+	margin:30px auto 0;
+	box-shadow:5px 5px 10px #444;
+	position:relative;
+	overflow:hidden;
+}
+.ship {
+	width:50px;
+	height:50px;
+	background:blue;
+	position:absolute;
+}
+.laser {
+	width:4px;
+	height:20px;
+	background:red;
+	position:absolute;
+}
+.enemy {
+	width:50px;
+	height:50px;
+	background:green;
+	position:absolute;
+}
+/* new stuff */
+.score-div {
+	position:absolute;
+	top:10px;
+	left:10px;
+}
+.score-label, .lives-label {
+	font-family:Arial, Helvetica, sans-serif;
+	color:#fff;
+	font-weight:bold;
+	margin:0;
+	font-size:20px;
+}
+.lives-div {
+	position:absolute;
+	top:40px;
+	left:10px;
+}
+.game-over {
+	font-family: Arial, Helvetica, sans-serif;
+	margin-top:240px;
+	text-align:center;
+	color:#fff;
+}
+</style>
+</head>
+
+<body>
+<script src="requestAnimFrame.js"></script>
+<script>
+(function () {
+	var playArea = document.createElement('div'),
+		ship = document.createElement('div'),
+		scoreDiv = document.createElement('div'), // new stuff
+		scoreLabel = document.createElement('p'), // new stuff
+		livesDiv = document.createElement('div'), // new stuff
+		livesLabel = document.createElement('p'), // new stuff
+		gameOverText = document.createElement('h1'), // new stuff
+		shipPos = {
+			x: 0,
+			y: 0,
+			startX: 0, // new stuff
+			startY: 0 // new stuff
+		},
+		shipSpeed = 4,
+		key = {
+			right: false,
+			left: false,
+			up: false,
+			down: false
+		},
+		lasers = [],
+		laserSpeed = 4,
+		max_lasers = 5,
+		enemies = [],
+		enemySpeed = 2,
+		enemyTotal = 4,
+		enemyPos = {
+			x: 150,
+			y: -50
+        },
+        scoreText = 'Score: ', // new stuff
+        score = 0, // new stuff
+        livesText = 'Lives: ', // new stuff
+        lives = 3, // new stuff
+        gameOver = false; // new stuff
+
+	document.body.appendChild(playArea);
+	playArea.classList.add('playArea');
+	playArea.appendChild(ship);
+	ship.classList.add('ship');
+	shipPos.x = (playArea.offsetWidth / 2) - (ship.offsetWidth / 2);
+	shipPos.y = playArea.offsetHeight - (ship.offsetHeight * 2);
+	shipPos.startX = shipPos.x; // new stuff
+	shipPos.startY = shipPos.y; // new stuff
+	playArea.leftBoundary = 0;
+	playArea.rightBoundary = playArea.offsetWidth - ship.offsetWidth - 20;
+	playArea.topBoundary = 0;
+	playArea.bottomBoundary = playArea.offsetHeight - ship.offsetHeight - 20;
+	
+	//new stuff
+	document.body.appendChild(scoreDiv);
+	scoreDiv.classList.add('score-div');
+	scoreDiv.appendChild(scoreLabel);
+	scoreLabel.classList.add('score-label');
+	document.body.appendChild(livesDiv);
+	livesDiv.classList.add('lives-div');
+	livesDiv.appendChild(livesLabel);
+	livesLabel.classList.add('lives-label');
+
+	for (var i = 0; i < enemyTotal; i++) {
+		var enemy = new Enemy();
+		enemies.push([enemy, enemyPos.y]);
+		playArea.appendChild(enemies[i][0]);
+		enemies[i][0].classList.add('enemy');
+		enemies[i][0].style.top = enemies[i][1] + 'px';
+		enemies[i][0].style.left = enemyPos.x + 'px';
+		enemyPos.x += 150;
+	}
+
+	function moveShip() {
+		if (key.right === true) {
+			shipPos.x += shipSpeed;
+		} else if (key.left === true) {
+			shipPos.x -= shipSpeed;
+		}
+		if (key.up === true) {
+			shipPos.y -= shipSpeed;
+		} else if (key.down === true) {
+			shipPos.y += shipSpeed;
+		}
+		if (shipPos.x < playArea.leftBoundary) {
+			shipPos.x = playArea.leftBoundary;
+		}
+		if (shipPos.x > playArea.rightBoundary) {
+			shipPos.x = playArea.rightBoundary;
+		}
+		if (shipPos.y < playArea.topBoundary) {
+			shipPos.y = playArea.topBoundary;
+		}
+		if (shipPos.y > playArea.bottomBoundary) {
+			shipPos.y = playArea.bottomBoundary;
+		}
+		ship.style.left = shipPos.x + 'px';
+		ship.style.top = shipPos.y + 'px';
+	}
+
+	function Laser() {
+		return document.createElement('div');
+	}
+
+	function Enemy() {
+		return document.createElement('div');
+	}
+
+	function moveLasers() {
+		for (var i = 0; i < lasers.length; i++) {
+			if (parseInt(lasers[i][0].style.top) > playArea.topBoundary) {
+				lasers[i][1] -= laserSpeed;
+				lasers[i][0].style.top = lasers[i][1] + 'px';
+				checkHit(i);
+			} else {
+				playArea.removeChild(lasers[i][0]);
+				lasers.splice(i, 1);
+			}
+		}
+	}
+
+	function moveEnemies() {
+		if (enemies.length < enemyTotal) {
+			var enemy = new Enemy();
+			enemies.push([enemy, enemyPos.y]);
+			playArea.appendChild(enemies[enemies.length - 1][0]);
+			enemies[enemies.length - 1][0].classList.add('enemy');
+			enemies[enemies.length - 1][0].style.top = enemies[enemies.length - 1][1] + 'px';
+			enemies[enemies.length - 1][0].style.left = Math.floor(Math.random() * 500) + 'px';
+		}
+		for (var i = 0; i < enemies.length; i++) {
+			enemies[i][1] += enemySpeed;
+			enemies[i][0].style.top = enemies[i][1] + 'px';
+
+			// new stuff
+			var ex = parseInt(enemies[i][0].style.left),
+				ey = parseInt(enemies[i][0].style.top),
+				ew = ex + parseInt(enemies[i][0].offsetWidth),
+				eh = ey + parseInt(enemies[i][0].offsetHeight),
+				sx = parseInt(ship.style.left),
+				sy = parseInt(ship.style.top),
+				sw = sx + parseInt(ship.offsetWidth),
+				sh = sy + parseInt(ship.offsetHeight);
+			
+
+			if (parseInt(enemies[i][0].style.top) > (playArea.bottomBoundary + enemies[i][0].style.height)) {
+				enemies[i][1] = enemyPos.y;
+				enemies[i][0].style.top = enemies[i][1] + 'px';
+			} else if (sx >= ex && sx <= ew && sy >= ey && sy <= eh) { // new stuff
+				checkLives();
+			} else if (sw <= ew && sw >= ex && sy >= ey && sy <= eh) {
+				checkLives();
+			} else if (sh >= ey && sy <= eh && sx >= ex && sx <= ew) {
+				checkLives();
+			} else if (sh >= ey && sh <= eh && sw <= ew && sw >= ex) {
+				checkLives();
+			}
+		}
+	}
+
+	// new stuff
+	function checkLives() {
+		if (lives > 1) {
+			resetGame();
+		} else {
+			playArea.removeChild(ship);
+			for (var i = 0; i < enemies.length; i++) {
+				playArea.removeChild(enemies[i][0]);
+			}
+			if (lasers.length > 0) {
+				for (var i = 0; i < lasers.length; i++) {
+					playArea.removeChild(lasers[i][0]);
+				}
+			}
+			gameOver = true;
+			playArea.appendChild(gameOverText);
+			gameOverText.classList.add('game-over');
+			gameOverText.innerHTML = 'Game Over';
+		}
+		lives -= 1;
+	}
+
+	// new stuff
+	function resetGame() {
+		shipPos.x = shipPos.startX;
+		shipPos.y = shipPos.startY;
+		ship.style.left = shipPos.x + 'px';
+		ship.style.top = shipPos.y + 'px';
+		enemyPos.x = 150;
+		for (var i = 0; i < enemyTotal; i++) {
+			enemies[i][1] = enemyPos.y;
+			enemies[i][0].style.top = enemies[i][1] + 'px';
+			enemies[i][0].style.left = enemyPos.x + 'px';
+			enemyPos.x += 150;
+		}
+	}
+
+	function checkHit(l) {
+		var lx = parseInt(lasers[l][0].style.left),
+			ly = parseInt(lasers[l][0].style.top);
+		for (var i = 0; i < enemies.length; i++) {
+			var ex = parseInt(enemies[i][0].style.left),
+				ey = parseInt(enemies[i][0].style.top),
+				ew = enemies[i][0].offsetWidth,
+				eh = enemies[i][0].offsetHeight;
+			if (lx > ex && lx < ex + ew && ly > ey && ly < ey + eh) {
+				playArea.removeChild(lasers[l][0]);
+				playArea.removeChild(enemies[i][0]);
+				lasers.splice(l, 1);
+				enemies.splice(i, 1);
+				score += 100; // new stuff
+			}
+		}
+	}
+
+    // new stuff
+	function updateScore() {
+	    scoreLabel.innerHTML = scoreText + score;
+	    livesLabel.innerHTML = livesText + lives;
+	}
+
+	function keyDown(e) {
+		if (e.keyCode === 39) {
+			key.right = true;
+		} else if (e.keyCode === 37) {
+			key.left = true;
+		}
+		if (e.keyCode === 38) {
+			key.up = true;
+		} else if (e.keyCode === 40) {
+			key.down = true;
+		}
+		if (e.keyCode === 88) {
+			if (lasers.length < max_lasers) {
+				var laser = new Laser();
+				lasers.push([laser, shipPos.y]);
+				playArea.appendChild(lasers[lasers.length - 1][0]);
+				lasers[lasers.length - 1][0].classList.add('laser');
+				lasers[lasers.length - 1][0].style.top = lasers[lasers.length - 1][1] + 'px';
+				lasers[lasers.length - 1][0].style.left = shipPos.x + 25 + 'px';
+			}
+		}
+	}
+
+	function keyUp(e) {
+		if (e.keyCode === 39) {
+			key.right = false;
+		} else if (e.keyCode === 37) {
+			key.left = false;
+		}
+		if (e.keyCode === 38) {
+			key.up = false;
+		} else if (e.keyCode === 40) {
+			key.down = false;
+		}
+	}
+
+	document.addEventListener('keydown', keyDown, false);
+	document.addEventListener('keyup', keyUp, false);
+
+	function loop() {
+		if (gameOver === false) { // new stuff
+			moveShip();
+			moveEnemies();
+			moveLasers();
+		}
+		updateScore(); // new stuff
+		requestAnimFrame(loop);
+	}
+
+	loop();
+
+})();
+</script>
+</body>
+</html>

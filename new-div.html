@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>New div test</title>
+<style>
+body {
+	margin:0;
+	padding:0;
+}
+.laser {
+	width:10px;
+	height:40px;
+	background:red;
+	position:absolute;
+	left:50px;
+	_top:500px;
+}
+</style>
+</head>
+
+<body>
+<script>
+	var lasers = [],
+		max_lasers = 5,
+		laser_pos = 500;
+	
+	function Laser() {
+		return document.createElement('div');
+	}
+
+	document.addEventListener('keydown', keyDown, false);
+
+	function keyDown(e) {
+		if (lasers.length < max_lasers) {
+			var laser = Laser();
+			lasers.push([laser, laser_pos]);
+			document.body.appendChild(lasers[lasers.length - 1][0]);
+			lasers[lasers.length - 1][0].classList.add('laser');
+			lasers[lasers.length - 1][0].style.top = lasers[lasers.length - 1][1] + 'px';
+		}
+	}
+
+	function moveLasers() {
+		for (var i = 0; i < lasers.length; i++) {
+			lasers[i][1] -= 4;
+			lasers[i][0].style.top = lasers[i][1] + 'px';
+			if (parseInt(lasers[i][0].style.top) < -40) {
+				document.body.removeChild(lasers[i][0]);
+				lasers.splice(i, 1);
+			}
+			//lasers[i].style.top = ;
+		}
+	}
+
+	function loop() {
+		moveLasers();
+		setTimeout(loop, 1000/60);
+	}
+
+	loop();
+
+	/*var laser1 = newLaser('laser1');
+	document.body.appendChild(laser1);
+	laser1.classList.add('laser');
+	var laser2 = newLaser('laser2');
+	document.body.appendChild(laser2);
+	laser2.classList.add('laser');*/
+	/*for (var i = 0; i < 4; i++) {
+		var laser = Laser();
+		lasers.push(laser);
+		document.body.appendChild(lasers[i]);
+		lasers[i].classList.add('laser');
+	}*/
+</script>
+</body>
+</html>

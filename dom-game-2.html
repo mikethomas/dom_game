@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>DOM Game - Part 2</title>
+<style>
+body {
+	margin:0;
+	padding:0;
+	background:#888;
+}
+.playArea {
+	width:800px;
+	height:500px;
+	background:#000;
+	border:10px solid #333;
+	margin:30px auto 0;
+	box-shadow:5px 5px 10px #444;
+	position:relative;
+	overflow:hidden;
+}
+.ship {
+	width:50px;
+	height:50px;
+	background:blue;
+	position:absolute;
+}
+.laser {
+	width:4px;
+	height:20px;
+	background:red;
+	position:absolute;
+}
+</style>
+</head>
+
+<body>
+<script>
+(function () {
+	var playArea = document.createElement('div'),
+		ship = document.createElement('div'),
+		shipPos = {
+			x: 0,
+			y: 0
+		},
+		shipSpeed = 4,
+		key = {
+			right: false,
+			left: false,
+			up: false,
+			down: false
+		},
+		shipWidth = ship.offsetWidth,
+		shipHeight = ship.offsetHeight,
+		lasers = [],
+		laserSpeed = 4,
+		max_lasers = 5;
+
+	document.body.appendChild(playArea);
+	playArea.classList.add('playArea');
+	playArea.appendChild(ship);
+	ship.classList.add('ship');
+	shipPos.x = (playArea.offsetWidth / 2) - (ship.offsetWidth / 2);
+	shipPos.y = playArea.offsetHeight - (ship.offsetHeight * 2);
+	playArea.leftBoundary = 0;
+	playArea.rightBoundary = playArea.offsetWidth - ship.offsetWidth - 20;
+	playArea.topBoundary = 0;
+	playArea.bottomBoundary = playArea.offsetHeight - ship.offsetHeight - 20;
+
+	function moveShip() {
+		if (key.right === true) {
+			shipPos.x += shipSpeed;
+		} else if (key.left === true) {
+			shipPos.x -= shipSpeed;
+		}
+		if (key.up === true) {
+			shipPos.y -= shipSpeed;
+		} else if (key.down === true) {
+			shipPos.y += shipSpeed;
+		}
+		if (shipPos.x < playArea.leftBoundary) {
+			shipPos.x = playArea.leftBoundary;
+		}
+		if (shipPos.x > playArea.rightBoundary) {
+			shipPos.x = playArea.rightBoundary;
+		}
+		if (shipPos.y < playArea.topBoundary) {
+			shipPos.y = playArea.topBoundary;
+		}
+		if (shipPos.y > playArea.bottomBoundary) {
+			shipPos.y = playArea.bottomBoundary;
+		}
+		ship.style.left = shipPos.x + 'px';
+		ship.style.top = shipPos.y + 'px';
+	}
+
+	function Laser() {
+		return document.createElement('div');
+	}
+
+	function moveLasers() {
+		for (var i = 0; i < lasers.length; i++) {
+			lasers[i][1] -= laserSpeed;
+			lasers[i][0].style.top = lasers[i][1] + 'px';
+			if (parseInt(lasers[i][0].style.top) < playArea.topBoundary) {
+				playArea.removeChild(lasers[i][0]);
+				lasers.splice(i, 1);
+			}
+		}
+	}
+
+	function keyDown(e) {
+		if (e.keyCode === 39) {
+			key.right = true;
+		} else if (e.keyCode === 37) {
+			key.left = true;
+		}
+		if (e.keyCode === 38) {
+			key.up = true;
+		} else if (e.keyCode === 40) {
+			key.down = true;
+		}
+		if (e.keyCode === 88) {
+			if (lasers.length < max_lasers) {
+				var laser = Laser();
+				lasers.push([laser, shipPos.y]);
+				playArea.appendChild(lasers[lasers.length - 1][0]);
+				lasers[lasers.length - 1][0].classList.add('laser');
+				lasers[lasers.length - 1][0].style.top = lasers[lasers.length - 1][1] + 'px';
+				lasers[lasers.length - 1][0].style.left = shipPos.x + 25 + 'px';
+			}
+		}
+	}
+
+	function keyUp(e) {
+		if (e.keyCode === 39) {
+			key.right = false;
+		} else if (e.keyCode === 37) {
+			key.left = false;
+		}
+		if (e.keyCode === 38) {
+			key.up = false;
+		} else if (e.keyCode === 40) {
+			key.down = false;
+		}
+	}
+
+	document.addEventListener('keydown', keyDown, false);
+	document.addEventListener('keyup', keyUp, false);
+
+	function loop() {
+		moveShip();
+		moveLasers();
+		setTimeout(loop, 1000/60);
+	}
+
+	loop();
+
+})();
+</script>
+</body>
+</html>
